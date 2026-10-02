@@ -9,9 +9,9 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>es.udc.fic</groupId>
-	<artifactId>niche-recommender-backend</artifactId>
+	<artifactId>fictionary</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>niche-recommender-backend</name>
+	<name>fictionary</name>
 	<description/>
 	<url/>
 	<licenses>

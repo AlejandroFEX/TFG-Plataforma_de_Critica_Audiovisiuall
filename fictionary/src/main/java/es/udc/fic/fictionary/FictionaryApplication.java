@@ -1,13 +1,13 @@
-package es.udc.fic.niche_recommender_backend;
+package es.udc.fic.fictionary;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class NicheRecommenderBackendApplication {
+public class FictionaryApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(NicheRecommenderBackendApplication.class, args);
+		SpringApplication.run(FictionaryApplication.class, args);
 	}
 
 }

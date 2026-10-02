@@ -1,10 +1,10 @@
-package es.udc.fic.niche_recommender_backend;
+package es.udc.fic.fictionary;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class NicheRecommenderBackendApplicationTests {
+class FictionaryApplicationTests {
 
 	@Test
 	void contextLoads() {
