@@ -1,0 +1,22 @@
+# Base de datos local de desarrollo.
+# Uso:  cp .env.example .env   y después   docker compose up -d
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: fictionary-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-fictionary}
+      POSTGRES_USER: ${POSTGRES_USER:-fictionary}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fictionary}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - fictionary-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-fictionary} -d ${POSTGRES_DB:-fictionary}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  fictionary-db-data:
