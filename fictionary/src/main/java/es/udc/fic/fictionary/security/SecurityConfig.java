@@ -30,17 +30,17 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                // Endpoints públicos — no requieren token
+           .authorizeHttpRequests(auth -> auth
+            // Endpoints públicos — no requieren token
                 .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/catalog/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/recommendations/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/ranking").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/users/*/profile").permitAll()
-                // Todo lo demás requiere autenticación
-                .anyRequest().authenticated()
-            )
+                .requestMatchers("/api/catalog/**").permitAll()
+                .requestMatchers("/api/recommendations/**").permitAll()
+                .requestMatchers("/api/ranking/**").permitAll()
+                .requestMatchers("/api/users/*/profile").permitAll()
+            // Todo lo demás requiere autenticación
+             .anyRequest().authenticated()
+        )
             .addFilterBefore(jwtAuthenticationFilter,
                 UsernamePasswordAuthenticationFilter.class);
 
