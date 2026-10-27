@@ -38,6 +38,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/recommendations/**").permitAll()
                 .requestMatchers("/api/ranking/**").permitAll()
                 .requestMatchers("/api/users/*/profile").permitAll()
+                .requestMatchers("/api/simulation/**").permitAll()
             // Todo lo demás requiere autenticación
              .anyRequest().authenticated()
         )
