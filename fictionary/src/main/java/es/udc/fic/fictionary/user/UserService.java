@@ -1,10 +1,14 @@
 package es.udc.fic.fictionary.user;
 
 import es.udc.fic.fictionary.security.JwtTokenProvider;
+import es.udc.fic.fictionary.user.dto.UserProfileResponse;
+
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.PageRequest;
+import java.util.List;
 
 @Service
 @Transactional
@@ -59,4 +63,21 @@ public class UserService {
     public String getUserIdFromToken(String token) {
     return String.valueOf(jwtTokenProvider.getUserIdFromToken(token));
 }
+
+@Transactional(readOnly = true)
+public List<UserProfileResponse> getRanking(int page, int size) {
+    return userRepository
+            .findAllByOrderByCriticPointsDesc(
+                    org.springframework.data.domain.PageRequest.of(page, size))
+            .stream()
+            .map(u -> new UserProfileResponse(
+                    u.getId(),
+                    u.getUsername(),
+                    u.getEmail(),
+                    u.getBio(),
+                    u.getCriticPoints(),
+                    u.getCreatedAt()))
+            .toList();
+}
+
 }

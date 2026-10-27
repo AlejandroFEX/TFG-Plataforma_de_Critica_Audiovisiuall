@@ -14,7 +14,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api")
@@ -74,5 +76,12 @@ public ResponseEntity<AuthResponse> login(
                 user.getBio(),
                 user.getCriticPoints(),
                 user.getCreatedAt());
+    }
+
+    @GetMapping("/ranking")
+    public ResponseEntity<List<UserProfileResponse>> getRanking(
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(userService.getRanking(page, size));
     }
 }
