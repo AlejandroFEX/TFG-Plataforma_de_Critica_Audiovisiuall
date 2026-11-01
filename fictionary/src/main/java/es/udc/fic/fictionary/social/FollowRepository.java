@@ -3,6 +3,7 @@ package es.udc.fic.fictionary.social;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import es.udc.fic.fictionary.user.User;
 
 import java.util.List;
 
@@ -19,5 +20,11 @@ public interface FollowRepository extends JpaRepository<Follow, FollowId> {
 
     @Query("select f.id.followedId from Follow f where f.id.followerId = :followerId")
     List<Long> findFollowedIds(@Param("followerId") Long followerId);
+
+    @Query("select f.follower from Follow f where f.id.followedId = :userId order by f.follower.username")
+    List<User> findFollowers(@Param("userId") Long userId);
+
+    @Query("select f.followed from Follow f where f.id.followerId = :userId order by f.followed.username")
+    List<User> findFollowing(@Param("userId") Long userId);
 }
 

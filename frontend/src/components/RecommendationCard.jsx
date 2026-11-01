@@ -2,6 +2,14 @@ import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { rateRecommendation } from '../api/recommendations'
 
+function formatDate(iso) {
+  return new Date(iso).toLocaleDateString('es-ES', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })
+}
+
 export default function RecommendationCard({ rec, onRated }) {
   const { user } = useAuth()
   const [score, setScore] = useState('')
@@ -37,7 +45,7 @@ export default function RecommendationCard({ rec, onRated }) {
         )}
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2 mb-1">
-            <h3 className="font-semibold text-gray-900 text-base leading-tight">
+            <h3 className="font-semibold text-gray-900 text-base leading-tight [overflow-wrap:anywhere]">
               {rec.titleName}
             </h3>
             {rec.hiddenGem && (
@@ -55,7 +63,7 @@ export default function RecommendationCard({ rec, onRated }) {
               Popularidad: {rec.popularitySnapshot.toFixed(1)}
             </span>
           </div>
-          <p className="text-sm text-gray-600 leading-relaxed mb-4">
+          <p className="text-sm text-gray-600 leading-relaxed mb-4 whitespace-pre-line [overflow-wrap:anywhere]">
             {rec.text}
           </p>
           <div className="flex items-center justify-between">
@@ -68,7 +76,7 @@ export default function RecommendationCard({ rec, onRated }) {
                   {rec.curatorUsername}
                 </p>
                 <p className="text-xs text-gray-400">
-                  {rec.curatorCriticPoints.toFixed(2)} CP
+                  {rec.curatorCriticPoints.toFixed(2)} CP · {formatDate(rec.createdAt)}
                 </p>
               </div>
             </div>
@@ -86,7 +94,7 @@ export default function RecommendationCard({ rec, onRated }) {
                     className="text-xs border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                   >
                     <option value="">Votar</option>
-                    {[1,2,3,4,5,6,7,8,9,10].map(n => (
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
                       <option key={n} value={n}>{n}</option>
                     ))}
                   </select>

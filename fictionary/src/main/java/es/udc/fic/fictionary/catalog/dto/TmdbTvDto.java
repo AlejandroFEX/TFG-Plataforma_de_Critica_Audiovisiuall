@@ -3,6 +3,7 @@ package es.udc.fic.fictionary.catalog.dto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.time.LocalDate;
+import java.util.List;
 
 public record TmdbTvDto(
         long id,
@@ -24,5 +25,8 @@ public record TmdbTvDto(
         int voteCount,
 
         @JsonProperty("genre_ids")
-        java.util.List<Integer> genreIds
+        List<Integer> genreIds,
+
+        @JsonProperty("genres")
+        List<TmdbGenreDto> genres
 ) {}

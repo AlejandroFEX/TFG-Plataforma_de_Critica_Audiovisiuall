@@ -8,5 +8,7 @@ public record UserProfileResponse(
         String email,
         String bio,
         double criticPoints,
-        Instant createdAt
+        Instant createdAt,
+        String avatarUrl
 ) {}
+

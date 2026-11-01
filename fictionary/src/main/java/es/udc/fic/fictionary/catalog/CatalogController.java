@@ -1,5 +1,6 @@
 package es.udc.fic.fictionary.catalog;
 
+import es.udc.fic.fictionary.catalog.dto.GenreResponse;
 import es.udc.fic.fictionary.catalog.dto.TitleResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,6 +26,11 @@ public class CatalogController {
             @RequestParam String query,
             @RequestParam(required = false) MediaType type) {
         return ResponseEntity.ok(catalogService.search(query, type));
+    }
+
+    @GetMapping("/genres")
+    public ResponseEntity<List<GenreResponse>> genres() {
+        return ResponseEntity.ok(catalogService.getGenres());
     }
 
     @GetMapping("/{tmdbId}")

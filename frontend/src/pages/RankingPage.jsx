@@ -1,16 +1,14 @@
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { getRanking } from '../api/auth'
-import { follow, isFollowing } from '../api/social'
-import { useAuth } from '../context/AuthContext'
 
 export default function RankingPage() {
-  const { user } = useAuth()
   const navigate = useNavigate()
 
   const { data, isLoading } = useQuery({
     queryKey: ['ranking'],
     queryFn: () => getRanking().then(r => r.data),
+    staleTime: 0,
   })
 
   return (
@@ -32,21 +30,34 @@ export default function RankingPage() {
             className="bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-4 cursor-pointer hover:border-indigo-200 transition-colors"
             onClick={() => navigate(`/profile/${critic.id}`)}
           >
-            <span className="text-2xl font-bold text-gray-200 w-8 text-center">
+            <span className="text-2xl font-bold text-gray-200 w-8 text-center flex-shrink-0">
               {index + 1}
             </span>
-            <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-sm font-semibold text-indigo-700 flex-shrink-0">
-              {critic.username.slice(0, 2).toUpperCase()}
-            </div>
-            <div className="flex-1">
-              <p className="font-medium text-gray-900 text-sm">
+
+            {critic.avatarUrl ? (
+              <img
+                src={critic.avatarUrl}
+                alt={critic.username}
+                className="w-10 h-10 rounded-full object-cover flex-shrink-0 border border-gray-100"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-sm font-semibold text-indigo-700 flex-shrink-0">
+                {critic.username.slice(0, 2).toUpperCase()}
+              </div>
+            )}
+
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-gray-900 text-sm [overflow-wrap:anywhere]">
                 {critic.username}
               </p>
               {critic.bio && (
-                <p className="text-xs text-gray-400 truncate">{critic.bio}</p>
+                <p className="text-xs text-gray-400 mt-0.5 line-clamp-2 whitespace-pre-line [overflow-wrap:anywhere]">
+                  {critic.bio}
+                </p>
               )}
             </div>
-            <div className="text-right">
+
+            <div className="text-right flex-shrink-0">
               <p className="text-sm font-semibold text-indigo-600">
                 {critic.criticPoints.toFixed(2)}
               </p>

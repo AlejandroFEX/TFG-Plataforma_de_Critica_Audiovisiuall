@@ -5,3 +5,5 @@ export const searchCatalog = (query, type) =>
 
 export const getTitle = (tmdbId, type) =>
   client.get(`/catalog/${tmdbId}`, { params: { type } })
+
+export const getGenres = () => client.get('/catalog/genres')

@@ -2,12 +2,13 @@ package es.udc.fic.fictionary.user;
 
 import es.udc.fic.fictionary.security.JwtTokenProvider;
 import es.udc.fic.fictionary.user.dto.UserProfileResponse;
-
+import es.udc.fic.fictionary.user.dto.RankingEntryResponse;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.PageRequest;
+
 import java.util.List;
 
 @Service
@@ -17,14 +18,17 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+private final AvatarStorageService avatarStorageService;
 
-    public UserService(UserRepository userRepository,
-                       PasswordEncoder passwordEncoder,
-                       JwtTokenProvider jwtTokenProvider) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtTokenProvider = jwtTokenProvider;
-    }
+public UserService(UserRepository userRepository,
+                   PasswordEncoder passwordEncoder,
+                   JwtTokenProvider jwtTokenProvider,
+                   AvatarStorageService avatarStorageService) {
+    this.userRepository = userRepository;
+    this.passwordEncoder = passwordEncoder;
+    this.jwtTokenProvider = jwtTokenProvider;
+    this.avatarStorageService = avatarStorageService;
+}
 
     public User register(String username, String email, String rawPassword) {
         if (userRepository.existsByEmailIgnoreCase(email)) {
@@ -65,19 +69,32 @@ public class UserService {
 }
 
 @Transactional(readOnly = true)
-public List<UserProfileResponse> getRanking(int page, int size) {
+public List<RankingEntryResponse> getRanking(int page, int size) {
     return userRepository
-            .findAllByOrderByCriticPointsDesc(
-                    org.springframework.data.domain.PageRequest.of(page, size))
+            .findAllByOrderByCriticPointsDesc(PageRequest.of(page, size))
             .stream()
-            .map(u -> new UserProfileResponse(
-                    u.getId(),
-                    u.getUsername(),
-                    u.getEmail(),
-                    u.getBio(),
-                    u.getCriticPoints(),
-                    u.getCreatedAt()))
+            .map(u -> new RankingEntryResponse(
+                    u.getId(), u.getUsername(), u.getBio(),
+                    u.getAvatarUrl(), u.getCriticPoints()))
             .toList();
 }
 
+public User uploadAvatar(Long userId, org.springframework.web.multipart.MultipartFile file) {
+    User user = userRepository.findById(userId)
+            .orElseThrow(() -> new IllegalArgumentException(
+                    "Usuario no encontrado: " + userId));
+    if (user.getAvatarUrl() != null) {
+        avatarStorageService.delete(user.getAvatarUrl());
+    }
+    String url = avatarStorageService.store(file);
+    user.setAvatarUrl(url);
+    return userRepository.save(user);
+}
+public User updateProfile(Long userId, String bio) {
+    User user = userRepository.findById(userId)
+            .orElseThrow(() -> new IllegalArgumentException(
+                    "Usuario no encontrado: " + userId));
+    user.setBio(bio);
+    return userRepository.save(user);
+}
 }

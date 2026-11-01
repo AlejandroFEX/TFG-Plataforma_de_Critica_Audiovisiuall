@@ -1,14 +1,18 @@
 package es.udc.fic.fictionary.social;
 
-import es.udc.fic.fictionary.catalog.MediaType;
+import es.udc.fic.fictionary.recommendation.Recommendation;
 import es.udc.fic.fictionary.recommendation.RecommendationRepository;
 import es.udc.fic.fictionary.recommendation.dto.RecommendationResponse;
+import es.udc.fic.fictionary.social.dto.UserSummaryResponse;
 import es.udc.fic.fictionary.user.User;
 import es.udc.fic.fictionary.user.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -71,32 +75,71 @@ public class SocialService {
     }
 
     @Transactional(readOnly = true)
-    public List<RecommendationResponse> getFeed(Long userId,
-                                                MediaType mediaType,
-                                                Double maxPopularity,
-                                                String sortBy) {
+    public List<UserSummaryResponse> getFollowers(Long userId) {
+        return followRepository.findFollowers(userId).stream().map(this::toSummary).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<UserSummaryResponse> getFollowing(Long userId) {
+        return followRepository.findFollowing(userId).stream().map(this::toSummary).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<RecommendationResponse> getFeed(Long userId, FeedFilter f) {
         List<Long> followedIds = followRepository.findFollowedIds(userId);
         if (followedIds.isEmpty()) {
             return List.of();
         }
 
-        if (mediaType != null || maxPopularity != null) {
-            return recommendationRepository
-                    .findFeedFiltered(followedIds, mediaType, maxPopularity)
-                    .stream()
-                    .map(this::toResponse)
-                    .toList();
-        }
+        Instant fromInstant = f.from() == null ? null
+                : f.from().atStartOfDay(ZoneOffset.UTC).toInstant();
+        Instant toInstant = f.to() == null ? null
+                : f.to().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
 
-        return recommendationRepository
-                .findFeedByCuratorIds(followedIds)
-                .stream()
+        return recommendationRepository.findFeedByCuratorIds(followedIds).stream()
+                .filter(r -> f.mediaType() == null
+                        || r.getTitle().getMediaType() == f.mediaType())
+                .filter(r -> f.genre() == null
+                        || r.getTitle().getGenres().stream()
+                                .anyMatch(g -> g.getTmdbGenreId() == f.genre()))
+                .filter(r -> f.minPopularity() == null
+                        || r.getPopularitySnapshot() >= f.minPopularity())
+                .filter(r -> f.maxPopularity() == null
+                        || r.getPopularitySnapshot() < f.maxPopularity())
+                .filter(r -> f.minRating() == null
+                        || (r.getRatingCount() > 0 && r.averageRating() >= f.minRating()))
+                .filter(r -> fromInstant == null || !r.getCreatedAt().isBefore(fromInstant))
+                .filter(r -> toInstant == null || r.getCreatedAt().isBefore(toInstant))
+                .sorted(comparatorFor(f.sortBy()))
                 .map(this::toResponse)
                 .toList();
     }
 
-    private RecommendationResponse toResponse(
-            es.udc.fic.fictionary.recommendation.Recommendation r) {
+    private Comparator<Recommendation> comparatorFor(String sortBy) {
+        String key = sortBy == null ? "recent" : sortBy;
+        return switch (key) {
+            case "oldest" -> Comparator.comparing(Recommendation::getCreatedAt);
+            case "criticPoints" -> Comparator
+                    .comparingDouble((Recommendation r) -> r.getCurator().getCriticPoints())
+                    .thenComparing(Recommendation::getCreatedAt)
+                    .reversed();
+            case "rating" -> Comparator
+                    .comparingDouble(Recommendation::averageRating)
+                    .thenComparingInt(Recommendation::getRatingCount)
+                    .reversed();
+            case "leastPopular" -> Comparator
+                    .comparingDouble(Recommendation::getPopularitySnapshot)
+                    .thenComparing(Recommendation::getCreatedAt, Comparator.reverseOrder());
+            default -> Comparator.comparing(Recommendation::getCreatedAt).reversed();
+        };
+    }
+
+    private UserSummaryResponse toSummary(User u) {
+        return new UserSummaryResponse(
+                u.getId(), u.getUsername(), u.getAvatarUrl(), u.getCriticPoints());
+    }
+
+    private RecommendationResponse toResponse(Recommendation r) {
         String posterUrl = r.getTitle().getPosterPath() != null
                 ? "https://image.tmdb.org/t/p/w500" + r.getTitle().getPosterPath()
                 : null;

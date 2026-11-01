@@ -41,6 +41,9 @@ public class User {
     @Column(name = "critic_points", nullable = false)
     private double criticPoints;
 
+    @Column(name = "avatar_url", length = 500)
+    private String avatarUrl;
+
     protected User() {
         // Requerido por JPA
     }
@@ -68,8 +71,9 @@ public class User {
 
     public void setBio(String bio) { this.bio = bio; }
     public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
-    public void setCriticPoints(double criticPoints) { this.criticPoints = criticPoints; }
-
+    public void setCriticPoints(double criticPoints) {
+    this.criticPoints = Math.max(0.0, criticPoints);
+}
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -81,4 +85,7 @@ public class User {
     public int hashCode() {
         return User.class.hashCode();
     }
+
+    public String getAvatarUrl() { return avatarUrl; }
+    public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
 }
