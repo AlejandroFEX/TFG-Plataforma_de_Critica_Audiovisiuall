@@ -21,16 +21,20 @@ public class CatalogController {
         this.catalogService = catalogService;
     }
 
+    /** query vacío + genre = explorar por género. niche solo afecta a ese modo. */
     @GetMapping("/search")
     public ResponseEntity<List<TitleResponse>> search(
-            @RequestParam String query,
-            @RequestParam(required = false) MediaType type) {
-        return ResponseEntity.ok(catalogService.search(query, type));
+            @RequestParam(required = false, defaultValue = "") String query,
+            @RequestParam(required = false) MediaType type,
+            @RequestParam(required = false) Integer genre,
+            @RequestParam(required = false, defaultValue = "false") boolean niche) {
+        return ResponseEntity.ok(catalogService.search(query, type, genre, niche));
     }
 
     @GetMapping("/genres")
-    public ResponseEntity<List<GenreResponse>> genres() {
-        return ResponseEntity.ok(catalogService.getGenres());
+    public ResponseEntity<List<GenreResponse>> genres(
+            @RequestParam(required = false) MediaType type) {
+        return ResponseEntity.ok(catalogService.getGenres(type));
     }
 
     @GetMapping("/{tmdbId}")

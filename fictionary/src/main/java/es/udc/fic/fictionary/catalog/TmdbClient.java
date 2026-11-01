@@ -1,6 +1,7 @@
 package es.udc.fic.fictionary.catalog;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import es.udc.fic.fictionary.catalog.dto.TmdbGenreDto;
 import es.udc.fic.fictionary.catalog.dto.TmdbMovieDto;
 import es.udc.fic.fictionary.catalog.dto.TmdbTvDto;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,10 +14,12 @@ import java.util.List;
 @Component
 public class TmdbClient {
 
+    private static final String POSTER_BASE_URL = "https://image.tmdb.org/t/p/w500";
+    /** En modo "joyas": ignora títulos sin votos para no devolver basura sin valorar. */
+    private static final int NICHE_MIN_VOTES = 20;
+
     private final RestClient restClient;
     private final String apiKey;
-
-    private static final String POSTER_BASE_URL = "https://image.tmdb.org/t/p/w500";
 
     public TmdbClient(
             @Value("${fictionary.tmdb.base-url}") String baseUrl,
@@ -27,7 +30,7 @@ public class TmdbClient {
                 .build();
     }
 
-    public List<TmdbMovieDto> searchMovies(String query) {
+    public List<TmdbMovieDto> searchMovies(String query, int page) {
         try {
             MovieSearchResponse response = restClient.get()
                     .uri(uriBuilder -> uriBuilder
@@ -35,17 +38,18 @@ public class TmdbClient {
                             .queryParam("api_key", apiKey)
                             .queryParam("query", query)
                             .queryParam("language", "es-ES")
-                            .queryParam("page", 1)
+                            .queryParam("page", page)
                             .build())
                     .retrieve()
                     .body(MovieSearchResponse.class);
-            return response != null ? response.results() : Collections.emptyList();
+            return response != null && response.results() != null
+                    ? response.results() : Collections.emptyList();
         } catch (Exception e) {
             return Collections.emptyList();
         }
     }
 
-    public List<TmdbTvDto> searchTv(String query) {
+    public List<TmdbTvDto> searchTv(String query, int page) {
         try {
             TvSearchResponse response = restClient.get()
                     .uri(uriBuilder -> uriBuilder
@@ -53,11 +57,74 @@ public class TmdbClient {
                             .queryParam("api_key", apiKey)
                             .queryParam("query", query)
                             .queryParam("language", "es-ES")
+                            .queryParam("page", page)
+                            .build())
+                    .retrieve()
+                    .body(TvSearchResponse.class);
+            return response != null && response.results() != null
+                    ? response.results() : Collections.emptyList();
+        } catch (Exception e) {
+            return Collections.emptyList();
+        }
+    }
+
+    /** Explora por género sin texto de búsqueda. niche = las menos populares primero. */
+    public List<TmdbMovieDto> discoverMovies(int genreId, boolean niche) {
+        try {
+            MovieSearchResponse response = restClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/discover/movie")
+                            .queryParam("api_key", apiKey)
+                            .queryParam("language", "es-ES")
+                            .queryParam("with_genres", genreId)
+                            .queryParam("sort_by", niche ? "popularity.asc" : "popularity.desc")
+                            .queryParam("vote_count.gte", niche ? NICHE_MIN_VOTES : 0)
+                            .queryParam("page", 1)
+                            .build())
+                    .retrieve()
+                    .body(MovieSearchResponse.class);
+            return response != null && response.results() != null
+                    ? response.results() : Collections.emptyList();
+        } catch (Exception e) {
+            return Collections.emptyList();
+        }
+    }
+
+    public List<TmdbTvDto> discoverTv(int genreId, boolean niche) {
+        try {
+            TvSearchResponse response = restClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/discover/tv")
+                            .queryParam("api_key", apiKey)
+                            .queryParam("language", "es-ES")
+                            .queryParam("with_genres", genreId)
+                            .queryParam("sort_by", niche ? "popularity.asc" : "popularity.desc")
+                            .queryParam("vote_count.gte", niche ? NICHE_MIN_VOTES : 0)
                             .queryParam("page", 1)
                             .build())
                     .retrieve()
                     .body(TvSearchResponse.class);
-            return response != null ? response.results() : Collections.emptyList();
+            return response != null && response.results() != null
+                    ? response.results() : Collections.emptyList();
+        } catch (Exception e) {
+            return Collections.emptyList();
+        }
+    }
+
+    /** Lista completa de géneros de TMDB (con nombre en español). */
+    public List<TmdbGenreDto> getGenres(MediaType type) {
+        String path = type == MediaType.MOVIE ? "/genre/movie/list" : "/genre/tv/list";
+        try {
+            GenreListResponse response = restClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path(path)
+                            .queryParam("api_key", apiKey)
+                            .queryParam("language", "es-ES")
+                            .build())
+                    .retrieve()
+                    .body(GenreListResponse.class);
+            return response != null && response.genres() != null
+                    ? response.genres() : Collections.emptyList();
         } catch (Exception e) {
             return Collections.emptyList();
         }
@@ -98,12 +165,15 @@ public class TmdbClient {
         return POSTER_BASE_URL + posterPath;
     }
 
-    // Records internos para deserializar la respuesta paginada de TMDB
     private record MovieSearchResponse(
             @JsonProperty("results") List<TmdbMovieDto> results
     ) {}
 
     private record TvSearchResponse(
             @JsonProperty("results") List<TmdbTvDto> results
+    ) {}
+
+    private record GenreListResponse(
+            @JsonProperty("genres") List<TmdbGenreDto> genres
     ) {}
 }

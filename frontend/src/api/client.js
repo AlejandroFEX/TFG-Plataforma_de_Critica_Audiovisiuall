@@ -7,7 +7,7 @@ const client = axios.create({
   },
 })
 
-// Interceptor para añadir el token JWT a todas las peticiones
+// Añade el token JWT a todas las peticiones
 client.interceptors.request.use((config) => {
   const token = localStorage.getItem('token')
   if (token) {
@@ -16,11 +16,13 @@ client.interceptors.request.use((config) => {
   return config
 })
 
-// Interceptor para manejar errores globales
+// Sesión caducada o inválida: se limpia y se vuelve al login.
+// Las llamadas a /auth se excluyen para que un login fallido muestre su mensaje de error.
 client.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const isAuthCall = error.config?.url?.startsWith('/auth/')
+    if (error.response?.status === 401 && !isAuthCall) {
       localStorage.removeItem('token')
       localStorage.removeItem('user')
       window.location.href = '/login'

@@ -71,7 +71,7 @@ public UserService(UserRepository userRepository,
 @Transactional(readOnly = true)
 public List<RankingEntryResponse> getRanking(int page, int size) {
     return userRepository
-            .findAllByOrderByCriticPointsDesc(PageRequest.of(page, size))
+            .findBySimulatedFalseOrderByCriticPointsDesc(PageRequest.of(page, size))
             .stream()
             .map(u -> new RankingEntryResponse(
                     u.getId(), u.getUsername(), u.getBio(),
@@ -96,5 +96,23 @@ public User updateProfile(Long userId, String bio) {
                     "Usuario no encontrado: " + userId));
     user.setBio(bio);
     return userRepository.save(user);
+}
+
+@Transactional(readOnly = true)
+public List<RankingEntryResponse> searchUsers(String query, int page, int size) {
+    String q = query == null ? "" : query.trim();
+    if (q.length() < 2) {
+        return List.of();
+    }
+    int safeSize = Math.min(Math.max(size, 1), 50);
+    int safePage = Math.max(page, 0);
+    return userRepository
+            .findByUsernameContainingIgnoreCaseAndSimulatedFalseOrderByCriticPointsDescUsernameAsc(
+                    q, PageRequest.of(safePage, safeSize))
+            .stream()
+            .map(u -> new RankingEntryResponse(
+                    u.getId(), u.getUsername(), u.getBio(),
+                    u.getAvatarUrl(), u.getCriticPoints()))
+            .toList();
 }
 }

@@ -8,6 +8,7 @@ public record RecommendationResponse(
         Long id,
         Long curatorId,
         String curatorUsername,
+        String curatorAvatarUrl,
         double curatorCriticPoints,
         Long titleId,
         long tmdbId,

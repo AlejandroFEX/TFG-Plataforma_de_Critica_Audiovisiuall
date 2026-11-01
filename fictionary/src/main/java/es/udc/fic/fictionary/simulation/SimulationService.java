@@ -22,6 +22,9 @@ import java.util.Random;
 @Transactional
 public class SimulationService {
 
+    /** Tope por tipo de entidad, para que una llamada no pueda llenar la BD. */
+    private static final int MAX_ENTITIES = 200;
+
     private final UserRepository userRepository;
     private final TitleRepository titleRepository;
     private final RecommendationRepository recommendationRepository;
@@ -42,18 +45,22 @@ public class SimulationService {
     }
 
     public SimulationResult run(int numCurators, int numVoters, int numTitles, long seed) {
+        int curatorsN = clamp(numCurators);
+        int votersN = clamp(numVoters);
+        int titlesN = clamp(numTitles);
+
         Random rng = new Random(seed);
+        // Identificador corto de la ejecución: mantiene los usernames dentro de 30 caracteres
+        String runId = Long.toString(Math.abs(System.nanoTime()) % 100_000_000L);
 
-        // 1. Crear títulos con popularidades variadas
-        List<Title> titles = createTitles(numTitles, rng);
+        // 1. Títulos con popularidades variadas
+        List<Title> titles = createTitles(titlesN, rng);
 
-        // 2. Crear curadores
-        List<User> curators = createUsers("curator", numCurators);
+        // 2. Curadores y votantes (marcados como simulados)
+        List<User> curators = createUsers("curator", curatorsN, runId);
+        List<User> voters = createUsers("voter", votersN, runId);
 
-        // 3. Crear votantes
-        List<User> voters = createUsers("voter", numVoters);
-
-        // 4. Cada curador recomienda un título aleatorio
+        // 3. Cada curador recomienda un título
         List<Recommendation> recommendations = new ArrayList<>();
         for (int i = 0; i < curators.size(); i++) {
             User curator = curators.get(i);
@@ -65,17 +72,16 @@ public class SimulationService {
             recommendations.add(rec);
         }
 
-        // 5. Cada votante vota todas las recomendaciones con puntuación aleatoria 7-10
+        // 4. Cada votante puntúa todas las recomendaciones con una nota aleatoria 7-10
         for (User voter : voters) {
             for (Recommendation rec : recommendations) {
                 int score = 7 + rng.nextInt(4);
-                Rating rating = new Rating(voter, rec, score);
-                ratingRepository.save(rating);
+                ratingRepository.save(new Rating(voter, rec, score));
                 rec.addRating(score);
             }
         }
 
-        // 6. Recalcular contributions y Critic Points
+        // 5. Contribuciones y Critic Points
         for (Recommendation rec : recommendations) {
             double contribution = contributionCalculator.contribution(
                     rec.getRatingCount(),
@@ -92,7 +98,7 @@ public class SimulationService {
             curator.setCriticPoints(total);
         }
 
-        // 7. Construir resultado ordenado por Critic Points
+        // 6. Resultado ordenado por Critic Points
         List<SimulationResult.CuratorResult> results = curators.stream()
                 .map(c -> {
                     Recommendation rec = recommendations.stream()
@@ -112,27 +118,32 @@ public class SimulationService {
                 .toList();
 
         return new SimulationResult(
-                numCurators, numVoters, numTitles, seed,
+                curatorsN, votersN, titlesN, seed,
                 contributionCalculator.weightFunction().getClass().getSimpleName(),
                 results);
     }
 
     private List<Title> createTitles(int count, Random rng) {
-        List<Title> titles = new ArrayList<>();
-        // Popularidades distribuidas: nicho (1-20), media (20-60), popular (60-200)
+        // Popularidades: nicho (1-20), media (20-60), popular (60-200)
         double[] popularities = new double[count];
         for (int i = 0; i < count; i++) {
             if (i < count / 3) {
-                popularities[i] = 1 + rng.nextDouble() * 19; // nicho
+                popularities[i] = 1 + rng.nextDouble() * 19;
             } else if (i < 2 * count / 3) {
-                popularities[i] = 20 + rng.nextDouble() * 40; // media
+                popularities[i] = 20 + rng.nextDouble() * 40;
             } else {
-                popularities[i] = 60 + rng.nextDouble() * 140; // popular
+                popularities[i] = 60 + rng.nextDouble() * 140;
             }
         }
+
+        // Ids NEGATIVOS y distintos en cada ejecución: TMDB solo usa ids positivos,
+        // así que un título simulado nunca puede confundirse con uno real.
+        long base = -(System.currentTimeMillis() * 1000L);
+
+        List<Title> titles = new ArrayList<>();
         for (int i = 0; i < count; i++) {
             Title title = new Title(
-                    90000L + i, MediaType.MOVIE,
+                    base - i, MediaType.MOVIE,
                     "Título simulado " + (i + 1),
                     popularities[i], rng.nextInt(10000));
             titleRepository.save(title);
@@ -141,15 +152,18 @@ public class SimulationService {
         return titles;
     }
 
-    private List<User> createUsers(String prefix, int count) {
+    private List<User> createUsers(String prefix, int count, String runId) {
         List<User> users = new ArrayList<>();
         for (int i = 0; i < count; i++) {
-            String suffix = prefix + "_sim_" + System.nanoTime() + "_" + i;
-            User user = new User(suffix, suffix + "@sim.test",
-                    "$2a$10$simulatedHashForTestingOnly123456");
-            userRepository.save(user);
-            users.add(user);
+            String username = prefix + "_sim_" + runId + "_" + i;
+            users.add(userRepository.save(User.simulated(
+                    username, username + "@sim.test",
+                    "$2a$10$simulatedHashForTestingOnly123456")));
         }
         return users;
+    }
+
+    private static int clamp(int n) {
+        return Math.min(Math.max(n, 1), MAX_ENTITIES);
     }
 }

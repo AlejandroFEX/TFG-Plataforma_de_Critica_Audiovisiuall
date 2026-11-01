@@ -116,7 +116,13 @@ public ResponseEntity<UserProfileResponse> updateProfile(
     User user = userService.updateProfile(userId, body.get("bio"));
     return ResponseEntity.ok(toProfileResponse(user));
 }
-
+@GetMapping("/users/search")
+public ResponseEntity<List<RankingEntryResponse>> searchUsers(
+        @RequestParam String q,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "20") int size) {
+    return ResponseEntity.ok(userService.searchUsers(q, page, size));
+}
 
 
 }

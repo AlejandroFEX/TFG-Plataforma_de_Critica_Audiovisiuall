@@ -147,6 +147,7 @@ public class SocialService {
                 r.getId(),
                 r.getCurator().getId(),
                 r.getCurator().getUsername(),
+                r.getCurator().getAvatarUrl(),
                 r.getCurator().getCriticPoints(),
                 r.getTitle().getId(),
                 r.getTitle().getTmdbId(),

@@ -1,12 +1,24 @@
 import { Link, useNavigate } from 'react-router-dom'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../context/AuthContext'
+import { getProfile } from '../api/auth'
+import Avatar from './Avatar'
 
 export default function Navbar() {
   const { user, logoutUser } = useAuth()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
+
+  // Misma clave que ProfilePage: al subir una foto nueva, la barra se actualiza sola
+  const { data: me } = useQuery({
+    queryKey: ['profile', user?.id],
+    queryFn: () => getProfile(user.id).then(r => r.data),
+    enabled: !!user,
+  })
 
   function handleLogout() {
     logoutUser()
+    queryClient.clear() // evita que la siguiente sesión vea datos en caché de la anterior
     navigate('/login')
   }
 
@@ -27,9 +39,10 @@ export default function Navbar() {
             <>
               <Link
                 to={`/profile/${user.id}`}
-                className="text-sm text-gray-600 hover:text-gray-900"
+                className="flex items-center gap-2 text-sm text-gray-700 hover:text-gray-900"
               >
-                {user.username}
+                <Avatar src={me?.avatarUrl} name={user.username} size="sm" />
+                <span className="hidden sm:inline">{user.username}</span>
               </Link>
               <button
                 onClick={handleLogout}

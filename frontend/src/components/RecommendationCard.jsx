@@ -1,6 +1,8 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { rateRecommendation } from '../api/recommendations'
+import Avatar from './Avatar'
 
 function formatDate(iso) {
   return new Date(iso).toLocaleDateString('es-ES', {
@@ -66,21 +68,22 @@ export default function RecommendationCard({ rec, onRated }) {
           <p className="text-sm text-gray-600 leading-relaxed mb-4 whitespace-pre-line [overflow-wrap:anywhere]">
             {rec.text}
           </p>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center text-xs font-semibold text-indigo-700">
-                {rec.curatorUsername.slice(0, 2).toUpperCase()}
-              </div>
-              <div>
-                <p className="text-xs font-medium text-gray-800">
+          <div className="flex items-center justify-between gap-3">
+            <Link
+              to={`/profile/${rec.curatorId}`}
+              className="flex items-center gap-2 min-w-0 group"
+            >
+              <Avatar src={rec.curatorAvatarUrl} name={rec.curatorUsername} size="sm" />
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-gray-800 group-hover:text-indigo-600 truncate">
                   {rec.curatorUsername}
                 </p>
                 <p className="text-xs text-gray-400">
                   {rec.curatorCriticPoints.toFixed(2)} CP · {formatDate(rec.createdAt)}
                 </p>
               </div>
-            </div>
-            <div className="flex items-center gap-3">
+            </Link>
+            <div className="flex items-center gap-3 flex-shrink-0">
               {rec.ratingCount > 0 && (
                 <span className="text-xs text-gray-500">
                   ★ {rec.averageRating.toFixed(1)} ({rec.ratingCount})

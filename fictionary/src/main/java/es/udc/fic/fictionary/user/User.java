@@ -34,15 +34,19 @@ public class User {
     @Column(length = 500)
     private String bio;
 
+    @Column(name = "avatar_url", length = 500)
+    private String avatarUrl;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
-    /** Derivado: suma de las contribuciones de sus recomendaciones (lo mantiene el motor de ranking). */
+    /** Derivado: suma de las contribuciones de sus recomendaciones (nunca negativo). */
     @Column(name = "critic_points", nullable = false)
     private double criticPoints;
 
-    @Column(name = "avatar_url", length = 500)
-    private String avatarUrl;
+    /** Usuario generado por el módulo de simulación: no aparece en el ranking ni en las búsquedas. */
+    @Column(nullable = false, updatable = false)
+    private boolean simulated;
 
     protected User() {
         // Requerido por JPA
@@ -52,6 +56,13 @@ public class User {
         this.username = username;
         this.email = email;
         this.passwordHash = passwordHash;
+    }
+
+    /** Crea un usuario de datos sintéticos (no puede iniciar sesión: su hash no es válido). */
+    public static User simulated(String username, String email, String passwordHash) {
+        User user = new User(username, email, passwordHash);
+        user.simulated = true;
+        return user;
     }
 
     @PrePersist
@@ -66,14 +77,20 @@ public class User {
     public String getEmail() { return email; }
     public String getPasswordHash() { return passwordHash; }
     public String getBio() { return bio; }
+    public String getAvatarUrl() { return avatarUrl; }
     public Instant getCreatedAt() { return createdAt; }
     public double getCriticPoints() { return criticPoints; }
+    public boolean isSimulated() { return simulated; }
 
     public void setBio(String bio) { this.bio = bio; }
+    public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
     public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
+
+    /** Los Critic Points nunca bajan de 0. */
     public void setCriticPoints(double criticPoints) {
-    this.criticPoints = Math.max(0.0, criticPoints);
-}
+        this.criticPoints = Math.max(0.0, criticPoints);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -85,7 +102,4 @@ public class User {
     public int hashCode() {
         return User.class.hashCode();
     }
-
-    public String getAvatarUrl() { return avatarUrl; }
-    public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
 }
