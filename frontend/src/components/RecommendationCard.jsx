@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { rateRecommendation } from '../api/recommendations'
 import Avatar from './Avatar'
+import Poster from './Poster'
 
 function formatDate(iso) {
   return new Date(iso).toLocaleDateString('es-ES', {
@@ -12,111 +13,122 @@ function formatDate(iso) {
   })
 }
 
+/** Una recomendación como fila de lista: se coloca dentro de un contenedor con `divide-y`. */
 export default function RecommendationCard({ rec, onRated }) {
   const { user } = useAuth()
-  const [score, setScore] = useState('')
+  const [open, setOpen] = useState(false)
+  const [myScore, setMyScore] = useState(null)
   const [rating, setRating] = useState(false)
   const [error, setError] = useState(null)
 
-  const isOwnRecommendation = user?.id === rec.curatorId
+  const isOwn = user?.id === rec.curatorId
 
-  async function handleRate(e) {
-    e.preventDefault()
-    if (!score) return
+  async function submit(score) {
     setRating(true)
     setError(null)
     try {
-      await rateRecommendation(rec.id, parseInt(score))
+      await rateRecommendation(rec.id, score)
+      setMyScore(score)
+      setOpen(false)
       if (onRated) onRated()
     } catch (err) {
-      setError(err.response?.data?.message || 'Error al votar')
+      setError(err.response?.data?.message || 'No se pudo registrar la valoración')
     } finally {
       setRating(false)
     }
   }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-5 hover:border-indigo-200 transition-colors">
+    <article className="p-5">
       <div className="flex gap-4">
-        {rec.posterUrl && (
-          <img
-            src={rec.posterUrl}
-            alt={rec.titleName}
-            className="w-16 h-24 object-cover rounded-lg flex-shrink-0"
-          />
-        )}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2 mb-1">
-            <h3 className="font-semibold text-gray-900 text-base leading-tight [overflow-wrap:anywhere]">
+        <Poster url={rec.posterUrl} title={rec.titleName} />
+
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+            <h3 className="font-serif text-lg font-semibold leading-snug [overflow-wrap:anywhere]">
               {rec.titleName}
             </h3>
-            {rec.hiddenGem && (
-              <span className="flex-shrink-0 text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full font-medium">
-                ★ Joya oculta
-              </span>
-            )}
+            {rec.hiddenGem && <span className="chip chip-gem">◆ Joya oculta</span>}
           </div>
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-xs text-gray-500">
-              {rec.mediaType === 'MOVIE' ? 'Película' : 'Serie'}
-            </span>
-            <span className="text-xs text-gray-300">·</span>
-            <span className="text-xs text-gray-500">
-              Popularidad: {rec.popularitySnapshot.toFixed(1)}
-            </span>
-          </div>
-          <p className="text-sm text-gray-600 leading-relaxed mb-4 whitespace-pre-line [overflow-wrap:anywhere]">
+          <p className="mt-0.5 text-xs text-ink-faint">
+            {rec.mediaType === 'MOVIE' ? 'Película' : 'Serie'} · Popularidad{' '}
+            {rec.popularitySnapshot.toFixed(1)}
+          </p>
+
+          <p className="mt-3 whitespace-pre-line text-[15px] [overflow-wrap:anywhere]">
             {rec.text}
           </p>
-          <div className="flex items-center justify-between gap-3">
+
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
             <Link
               to={`/profile/${rec.curatorId}`}
-              className="flex items-center gap-2 min-w-0 group"
+              className="group flex min-w-0 items-center gap-2"
             >
               <Avatar src={rec.curatorAvatarUrl} name={rec.curatorUsername} size="sm" />
-              <div className="min-w-0">
-                <p className="text-xs font-medium text-gray-800 group-hover:text-indigo-600 truncate">
+              <span className="min-w-0 text-xs">
+                <span className="block truncate font-medium group-hover:text-gem">
                   {rec.curatorUsername}
-                </p>
-                <p className="text-xs text-gray-400">
-                  {rec.curatorCriticPoints.toFixed(2)} CP · {formatDate(rec.createdAt)}
-                </p>
-              </div>
-            </Link>
-            <div className="flex items-center gap-3 flex-shrink-0">
-              {rec.ratingCount > 0 && (
-                <span className="text-xs text-gray-500">
-                  ★ {rec.averageRating.toFixed(1)} ({rec.ratingCount})
                 </span>
+                <span className="text-ink-faint">
+                  {rec.curatorCriticPoints.toFixed(2)} CP · {formatDate(rec.createdAt)}
+                </span>
+              </span>
+            </Link>
+
+            <div className="flex items-center gap-3 text-xs">
+              {rec.ratingCount > 0 ? (
+                <span className="text-ink-soft">
+                  <span className="text-star">★</span>{' '}
+                  <span className="font-medium text-ink">{rec.averageRating.toFixed(1)}</span>{' '}
+                  · {rec.ratingCount} {rec.ratingCount === 1 ? 'valoración' : 'valoraciones'}
+                </span>
+              ) : (
+                <span className="text-ink-faint">Sin valoraciones</span>
               )}
-              {user && !isOwnRecommendation && (
-                <form onSubmit={handleRate} className="flex items-center gap-1">
-                  <select
-                    value={score}
-                    onChange={(e) => setScore(e.target.value)}
-                    className="text-xs border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                  >
-                    <option value="">Votar</option>
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
-                      <option key={n} value={n}>{n}</option>
-                    ))}
-                  </select>
-                  <button
-                    type="submit"
-                    disabled={!score || rating}
-                    className="text-xs bg-indigo-600 text-white px-3 py-1 rounded-lg hover:bg-indigo-700 disabled:opacity-50"
-                  >
-                    {rating ? '...' : 'OK'}
-                  </button>
-                </form>
+
+              {isOwn && <span className="chip">Tu recomendación</span>}
+
+              {!isOwn && user && (
+                <button
+                  onClick={() => setOpen(o => !o)}
+                  className="btn btn-secondary !px-3 !py-1 text-xs"
+                >
+                  {myScore ? `Tu nota: ${myScore}` : 'Valorar'}
+                </button>
+              )}
+
+              {!user && (
+                <Link to="/login" className="text-gem hover:underline">
+                  Inicia sesión para valorar
+                </Link>
               )}
             </div>
           </div>
-          {error && (
-            <p className="text-xs text-red-600 mt-2">{error}</p>
+
+          {open && (
+            <div className="mt-3 flex flex-wrap items-center gap-1.5">
+              <span className="label-caps mr-1">¿Cuánto te ha servido?</span>
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => (
+                <button
+                  key={n}
+                  type="button"
+                  disabled={rating}
+                  onClick={() => submit(n)}
+                  className={`h-7 w-7 rounded border text-xs font-medium transition-colors disabled:opacity-50 ${
+                    myScore === n
+                      ? 'border-ink bg-ink text-white'
+                      : 'border-line text-ink-soft hover:border-ink hover:text-ink'
+                  }`}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
           )}
+
+          {error && <p className="mt-2 text-xs text-danger">{error}</p>}
         </div>
       </div>
-    </div>
+    </article>
   )
 }

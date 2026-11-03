@@ -5,9 +5,7 @@ import { publishRecommendation } from '../api/recommendations'
 import { useAuth } from '../context/AuthContext'
 import useDebounce from '../hooks/useDebounce'
 import UserSearch from '../components/UserSearch'
-
-const inputClass =
-  'text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500'
+import Poster from '../components/Poster'
 
 export default function SearchPage() {
   const { user } = useAuth()
@@ -64,19 +62,19 @@ export default function SearchPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6">
-      <h1 className="text-lg font-semibold text-gray-900 mb-4">Buscar</h1>
+    <div className="page">
+      <h1 className="mb-5 text-3xl font-semibold">Buscar</h1>
 
       {/* Pestañas */}
-      <div className="flex gap-1 mb-5 border-b border-gray-200">
+      <div className="mb-6 flex gap-6 border-b border-line">
         {[['content', 'Contenido'], ['users', 'Usuarios']].map(([key, label]) => (
           <button
             key={key}
             onClick={() => setTab(key)}
-            className={`px-4 py-2 text-sm font-medium -mb-px border-b-2 transition-colors ${
+            className={`-mb-px border-b-2 pb-2.5 text-sm font-medium transition-colors ${
               tab === key
-                ? 'border-indigo-600 text-indigo-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                ? 'border-ink text-ink'
+                : 'border-transparent text-ink-faint hover:text-ink'
             }`}
           >
             {label}
@@ -88,11 +86,12 @@ export default function SearchPage() {
 
       {tab === 'content' && (
         <>
-          <div className="flex flex-col sm:flex-row gap-2 mb-3">
+          <div className="mb-3 grid gap-2 sm:grid-cols-[auto_auto_1fr]">
             <select
               value={mediaType}
               onChange={e => changeType(e.target.value)}
-              className={inputClass}
+              aria-label="Tipo de contenido"
+              className="input"
             >
               <option value="MOVIE">Películas</option>
               <option value="TV">Series</option>
@@ -100,7 +99,8 @@ export default function SearchPage() {
             <select
               value={genre}
               onChange={e => setGenre(e.target.value)}
-              className={inputClass}
+              aria-label="Género"
+              className="input"
             >
               <option value="">Todos los géneros</option>
               {genres?.map(g => (
@@ -111,105 +111,77 @@ export default function SearchPage() {
               type="text"
               value={query}
               onChange={e => setQuery(e.target.value)}
-              placeholder="Título (opcional si eliges género)..."
-              className={`flex-1 ${inputClass}`}
+              placeholder="Título (opcional si eliges género)…"
+              className="input"
             />
           </div>
 
           {q.length === 0 && genre !== '' && (
-            <label className="flex items-center gap-2 text-xs text-gray-600 mb-3">
+            <label className="mb-3 flex items-center gap-2 text-sm text-ink-soft">
               <input
                 type="checkbox"
                 checked={niche}
                 onChange={e => setNiche(e.target.checked)}
-                className="rounded border-gray-300"
+                className="accent-[var(--color-gem)]"
               />
               Mostrar primero las menos populares
             </label>
           )}
 
           {success && (
-            <div className="bg-emerald-50 text-emerald-700 px-4 py-3 rounded-lg mb-4 text-sm">
-              Recomendación publicada para {success}
+            <div className="mb-4 rounded-md bg-gem-soft px-3 py-2 text-sm text-gem">
+              Recomendación publicada para «{success}».
             </div>
           )}
-
-          {error && (
-            <div className="bg-red-50 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm">
-              {error}
-            </div>
-          )}
+          {error && <div className="alert-error mb-4">{error}</div>}
 
           {!hasCriteria && (
-            <p className="text-center text-gray-400 text-sm py-8">
+            <p className="py-12 text-center text-sm text-ink-faint">
               Escribe un título o elige un género para empezar.
             </p>
           )}
-
           {hasCriteria && isFetching && !results && (
-            <div className="text-center py-8 text-gray-400 text-sm">Buscando...</div>
+            <p className="py-12 text-center text-sm text-ink-faint">Buscando…</p>
           )}
-
           {hasCriteria && !isFetching && results?.length === 0 && (
-            <div className="text-center py-8 text-gray-500 text-sm">
+            <p className="py-12 text-center text-sm text-ink-soft">
               Sin resultados con estos criterios.
-            </div>
+            </p>
           )}
 
-          <div className="space-y-3">
-            {results?.map(title => (
-              <div
-                key={`${title.mediaType}-${title.tmdbId}`}
-                className="bg-white border border-gray-200 rounded-xl p-4"
-              >
-                <div className="flex gap-3">
-                  {title.posterUrl && (
-                    <img
-                      src={title.posterUrl}
-                      alt={title.name}
-                      className="w-12 h-18 object-cover rounded-lg flex-shrink-0"
-                    />
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
+          {results?.length > 0 && (
+            <ul className="panel divide-y divide-line">
+              {results.map(title => (
+                <li key={`${title.mediaType}-${title.tmdbId}`} className="flex gap-4 p-4">
+                  <Poster url={title.posterUrl} title={title.name} size="sm" />
+
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <h3 className="font-medium text-gray-900 text-sm [overflow-wrap:anywhere]">
+                        <h3 className="font-serif text-base font-semibold leading-snug [overflow-wrap:anywhere]">
                           {title.name}
                           {title.releaseDate && (
-                            <span className="text-gray-400 font-normal">
-                              {' '}({title.releaseDate.slice(0, 4)})
+                            <span className="font-normal text-ink-faint">
+                              {' '}{title.releaseDate.slice(0, 4)}
                             </span>
                           )}
                         </h3>
-                        <p className="text-xs text-gray-400 mt-0.5">
-                          Popularidad: {title.popularity?.toFixed(1)}
-                          {title.hiddenGem && (
-                            <span className="ml-2 text-emerald-600 font-medium">
-                              ★ Joya oculta
-                            </span>
-                          )}
+                        <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-ink-faint">
+                          <span>Popularidad {title.popularity?.toFixed(1)}</span>
+                          {title.hiddenGem && <span className="chip chip-gem">◆ Joya oculta</span>}
                         </p>
                         {title.genres?.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-1.5">
-                            {title.genres.map(g => (
-                              <span
-                                key={g}
-                                className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full"
-                              >
-                                {g}
-                              </span>
-                            ))}
-                          </div>
+                          <p className="mt-1 text-xs text-ink-soft">
+                            {title.genres.join(' · ')}
+                          </p>
                         )}
                       </div>
                       {user && (
                         <button
                           onClick={() =>
-                            setPublishing(
-                              publishing === title.tmdbId ? null : title.tmdbId
-                            )
+                            setPublishing(publishing === title.tmdbId ? null : title.tmdbId)
                           }
-                          className="flex-shrink-0 text-xs bg-indigo-50 text-indigo-700 px-3 py-1 rounded-lg hover:bg-indigo-100"
+                          className="btn btn-secondary shrink-0 !px-3 !py-1 text-xs"
                         >
                           Recomendar
                         </button>
@@ -222,24 +194,27 @@ export default function SearchPage() {
                           value={text}
                           onChange={e => setText(e.target.value)}
                           maxLength={2000}
-                          placeholder="Escribe tu recomendación (mínimo 10 caracteres)..."
-                          rows={3}
-                          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none"
+                          rows={4}
+                          placeholder="¿Por qué merece la pena? (mínimo 10 caracteres)…"
+                          className="input resize-none"
                         />
-                        <button
-                          onClick={() => handlePublish(title)}
-                          disabled={text.trim().length < 10}
-                          className="mt-2 text-xs bg-indigo-600 text-white px-4 py-1.5 rounded-lg hover:bg-indigo-700 disabled:opacity-50"
-                        >
-                          Publicar
-                        </button>
+                        <div className="mt-2 flex items-center justify-between">
+                          <span className="text-xs text-ink-faint">{text.length}/2000</span>
+                          <button
+                            onClick={() => handlePublish(title)}
+                            disabled={text.trim().length < 10}
+                            className="btn btn-primary !px-4 !py-1 text-xs"
+                          >
+                            Publicar
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
-                </div>
-              </div>
-            ))}
-          </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </>
       )}
     </div>

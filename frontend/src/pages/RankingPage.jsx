@@ -1,71 +1,68 @@
 import { useQuery } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { getRanking } from '../api/auth'
+import Avatar from '../components/Avatar'
 
 export default function RankingPage() {
-  const navigate = useNavigate()
-
   const { data, isLoading } = useQuery({
     queryKey: ['ranking'],
     queryFn: () => getRanking().then(r => r.data),
-    staleTime: 0,
+    staleTime: 0, // el ranking cambia con cada voto
   })
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6">
-      <h1 className="text-lg font-semibold text-gray-900 mb-6">
-        Ranking de críticos
-      </h1>
+    <div className="page">
+      <h1 className="text-3xl font-semibold">Ranking de críticos</h1>
+      <p className="mb-6 mt-2 max-w-xl text-sm text-ink-soft">
+        Los Critic Points premian a quien recomienda contenido poco conocido y bien
+        valorado por los demás. Recomendar un éxito de taquilla suma mucho menos.
+      </p>
 
       {isLoading && (
-        <div className="text-center py-12 text-gray-400 text-sm">
-          Cargando...
-        </div>
+        <p className="py-16 text-center text-sm text-ink-faint">Cargando…</p>
       )}
 
-      <div className="space-y-3">
-        {data?.map((critic, index) => (
-          <div
-            key={critic.id}
-            className="bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-4 cursor-pointer hover:border-indigo-200 transition-colors"
-            onClick={() => navigate(`/profile/${critic.id}`)}
-          >
-            <span className="text-2xl font-bold text-gray-200 w-8 text-center flex-shrink-0">
-              {index + 1}
-            </span>
+      {data?.length === 0 && (
+        <p className="py-16 text-center text-sm text-ink-soft">Aún no hay críticos.</p>
+      )}
 
-            {critic.avatarUrl ? (
-              <img
-                src={critic.avatarUrl}
-                alt={critic.username}
-                className="w-10 h-10 rounded-full object-cover flex-shrink-0 border border-gray-100"
-              />
-            ) : (
-              <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-sm font-semibold text-indigo-700 flex-shrink-0">
-                {critic.username.slice(0, 2).toUpperCase()}
-              </div>
-            )}
-
-            <div className="flex-1 min-w-0">
-              <p className="font-medium text-gray-900 text-sm [overflow-wrap:anywhere]">
-                {critic.username}
-              </p>
-              {critic.bio && (
-                <p className="text-xs text-gray-400 mt-0.5 line-clamp-2 whitespace-pre-line [overflow-wrap:anywhere]">
-                  {critic.bio}
-                </p>
-              )}
-            </div>
-
-            <div className="text-right flex-shrink-0">
-              <p className="text-sm font-semibold text-indigo-600">
-                {critic.criticPoints.toFixed(2)}
-              </p>
-              <p className="text-xs text-gray-400">Critic Points</p>
-            </div>
-          </div>
-        ))}
-      </div>
+      {data?.length > 0 && (
+        <ol className="panel divide-y divide-line">
+          {data.map((critic, index) => (
+            <li key={critic.id}>
+              <Link
+                to={`/profile/${critic.id}`}
+                className="flex items-center gap-4 p-4 transition-colors hover:bg-paper"
+              >
+                <span
+                  className={`w-8 shrink-0 text-center font-serif text-2xl font-semibold tabular-nums ${
+                    index < 3 ? 'text-ink' : 'text-ink-faint/60'
+                  }`}
+                >
+                  {index + 1}
+                </span>
+                <Avatar src={critic.avatarUrl} name={critic.username} />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium [overflow-wrap:anywhere]">
+                    {critic.username}
+                  </p>
+                  {critic.bio && (
+                    <p className="mt-0.5 line-clamp-2 whitespace-pre-line text-xs text-ink-faint [overflow-wrap:anywhere]">
+                      {critic.bio}
+                    </p>
+                  )}
+                </div>
+                <div className="shrink-0 text-right">
+                  <p className="font-serif text-xl font-semibold tabular-nums text-gem">
+                    {critic.criticPoints.toFixed(2)}
+                  </p>
+                  <p className="label-caps">Critic Points</p>
+                </div>
+              </Link>
+            </li>
+          ))}
+        </ol>
+      )}
     </div>
   )
 }

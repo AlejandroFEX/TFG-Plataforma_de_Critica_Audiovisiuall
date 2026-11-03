@@ -1,5 +1,7 @@
 package es.udc.fic.fictionary.user;
 
+import es.udc.fic.fictionary.common.BadRequestException;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -27,11 +29,11 @@ public class AvatarStorageService {
 
     public String store(MultipartFile file) {
         if (file.isEmpty()) {
-            throw new IllegalArgumentException("El fichero está vacío");
+            throw new BadRequestException("El fichero está vacío");
         }
         String contentType = file.getContentType();
         if (contentType == null || !contentType.startsWith("image/")) {
-            throw new IllegalArgumentException("Solo se permiten imágenes");
+            throw new BadRequestException("Solo se permiten imágenes");
         }
         String ext = getExtension(file.getOriginalFilename());
         String filename = UUID.randomUUID() + ext;

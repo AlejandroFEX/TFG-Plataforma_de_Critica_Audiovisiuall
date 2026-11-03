@@ -1,1 +1,53 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:wght@400;500;600&display=swap');
 @import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-serif: "Newsreader", Georgia, "Times New Roman", serif;
+
+  --color-paper: #f7f7f4;
+  --color-surface: #ffffff;
+  --color-ink: #14181c;
+  --color-ink-soft: #3f4950;
+  --color-ink-faint: #5f6a72;
+  --color-line: #e4e6e4;
+  --color-gem: #087a49;
+  --color-gem-soft: #e7f5ee;
+  --color-star: #d97706;
+  --color-danger: #b42318;
+  --color-danger-soft: #fdecea;
+}
+
+@layer base {
+  html { -webkit-font-smoothing: antialiased; }
+  body { @apply bg-paper font-sans text-[15px] leading-relaxed text-ink; }
+  h1, h2, h3 { @apply font-serif tracking-tight; }
+  button:not(:disabled) { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--color-gem); outline-offset: 2px; }
+}
+
+@layer components {
+  /* Contenedor de página */
+  .page { @apply mx-auto w-full max-w-3xl px-4 py-8; }
+
+  /* Etiqueta pequeña en mayúsculas */
+  .label-caps { @apply text-[11px] font-medium uppercase tracking-[0.08em] text-ink-faint; }
+
+  /* Superficie blanca con borde fino */
+  .panel { @apply rounded-lg border border-line bg-surface; }
+
+  /* Botones */
+  .btn { @apply inline-flex items-center justify-center gap-1.5 rounded-md px-3.5 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40; }
+  .btn-primary { @apply bg-ink text-white hover:bg-black; }
+  .btn-secondary { @apply border border-line bg-surface text-ink hover:border-ink-faint; }
+
+  /* Campos de formulario */
+  .input { @apply w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:border-ink focus:outline-none; }
+
+  /* Etiquetas */
+  .chip { @apply inline-flex items-center rounded-full border border-line px-2.5 py-0.5 text-xs text-ink-soft; }
+  .chip-gem { @apply border-gem/30 bg-gem-soft font-medium text-gem; }
+
+  /* Mensaje de error */
+  .alert-error { @apply rounded-md bg-danger-soft px-3 py-2 text-sm text-danger; }
+}

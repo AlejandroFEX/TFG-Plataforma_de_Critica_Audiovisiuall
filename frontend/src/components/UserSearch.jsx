@@ -3,6 +3,7 @@ import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { searchUsers } from '../api/auth'
 import useDebounce from '../hooks/useDebounce'
+import Avatar from './Avatar'
 
 export default function UserSearch() {
   const [text, setText] = useState('')
@@ -24,63 +25,52 @@ export default function UserSearch() {
         type="text"
         value={text}
         onChange={e => setText(e.target.value)}
-        placeholder="Busca un usuario por nombre..."
-        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 mb-4"
+        placeholder="Busca un usuario por nombre…"
+        className="input mb-5"
       />
 
       {!active && (
-        <p className="text-center text-gray-400 text-sm py-8">
+        <p className="py-10 text-center text-sm text-ink-faint">
           Escribe al menos 2 caracteres para buscar usuarios.
         </p>
       )}
-
       {active && isFetching && !results && (
-        <p className="text-center text-gray-400 text-sm py-8">Buscando...</p>
+        <p className="py-10 text-center text-sm text-ink-faint">Buscando…</p>
       )}
-
       {active && !isFetching && results?.length === 0 && (
-        <p className="text-center text-gray-500 text-sm py-8">
-          No se ha encontrado ningún usuario con ese nombre.
+        <p className="py-10 text-center text-sm text-ink-soft">
+          No hay ningún usuario con ese nombre.
         </p>
       )}
 
-      <div className="space-y-2">
-        {results?.map(u => (
-          <Link
-            key={u.id}
-            to={`/profile/${u.id}`}
-            className="bg-white border border-gray-200 rounded-xl p-3 flex items-center gap-3 hover:border-indigo-200 transition-colors"
-          >
-            {u.avatarUrl ? (
-              <img
-                src={u.avatarUrl}
-                alt={u.username}
-                className="w-10 h-10 rounded-full object-cover flex-shrink-0 border border-gray-100"
-              />
-            ) : (
-              <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-sm font-semibold text-indigo-700 flex-shrink-0">
-                {u.username.slice(0, 2).toUpperCase()}
-              </div>
-            )}
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 [overflow-wrap:anywhere]">
-                {u.username}
-              </p>
-              {u.bio && (
-                <p className="text-xs text-gray-400 line-clamp-1 [overflow-wrap:anywhere]">
-                  {u.bio}
-                </p>
-              )}
-            </div>
-            <div className="text-right flex-shrink-0">
-              <p className="text-sm font-semibold text-indigo-600">
-                {u.criticPoints.toFixed(2)}
-              </p>
-              <p className="text-xs text-gray-400">CP</p>
-            </div>
-          </Link>
-        ))}
-      </div>
+      {results?.length > 0 && (
+        <ul className="panel divide-y divide-line">
+          {results.map(u => (
+            <li key={u.id}>
+              <Link
+                to={`/profile/${u.id}`}
+                className="flex items-center gap-3 p-3.5 transition-colors hover:bg-paper"
+              >
+                <Avatar src={u.avatarUrl} name={u.username} />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium [overflow-wrap:anywhere]">{u.username}</p>
+                  {u.bio && (
+                    <p className="line-clamp-1 text-xs text-ink-faint [overflow-wrap:anywhere]">
+                      {u.bio}
+                    </p>
+                  )}
+                </div>
+                <div className="shrink-0 text-right">
+                  <p className="font-serif text-lg font-semibold tabular-nums text-gem">
+                    {u.criticPoints.toFixed(2)}
+                  </p>
+                  <p className="label-caps">CP</p>
+                </div>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   )
 }

@@ -1,5 +1,7 @@
 package es.udc.fic.fictionary.catalog;
 
+import es.udc.fic.fictionary.common.NotFoundException;
+
 import es.udc.fic.fictionary.catalog.dto.GenreResponse;
 import es.udc.fic.fictionary.catalog.dto.TitleResponse;
 import es.udc.fic.fictionary.catalog.dto.TmdbGenreDto;
@@ -161,8 +163,7 @@ public class CatalogService {
         Title title;
         if (mediaType == MediaType.MOVIE) {
             TmdbMovieDto dto = tmdbClient.getMovie(tmdbId);
-            if (dto == null) throw new IllegalArgumentException(
-                    "Título no encontrado en TMDB: " + tmdbId);
+            if (dto == null) throw new NotFoundException("Título no encontrado en TMDB: " + tmdbId);
             title = new Title(dto.id(), MediaType.MOVIE,
                     dto.title(), dto.popularity(), dto.voteCount());
             title.setOverview(dto.overview());
@@ -171,8 +172,7 @@ public class CatalogService {
             applyGenres(title, dto.genres());
         } else {
             TmdbTvDto dto = tmdbClient.getTv(tmdbId);
-            if (dto == null) throw new IllegalArgumentException(
-                    "Título no encontrado en TMDB: " + tmdbId);
+            if (dto == null) throw new NotFoundException("Título no encontrado en TMDB: " + tmdbId);
             title = new Title(dto.id(), MediaType.TV,
                     dto.name(), dto.popularity(), dto.voteCount());
             title.setOverview(dto.overview());

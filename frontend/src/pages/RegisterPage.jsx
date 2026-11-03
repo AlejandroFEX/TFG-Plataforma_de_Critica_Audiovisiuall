@@ -20,32 +20,34 @@ export default function RegisterPage() {
     setError(null)
     try {
       const { data } = await register(form)
-      loginUser(
-        { id: data.userId, username: data.username, email: data.email },
-        data.token
-      )
+      loginUser({ id: data.userId, username: data.username, email: data.email }, data.token)
       navigate('/feed')
     } catch (err) {
-      setError(err.response?.data?.message || 'Error al registrarse')
+      const data = err.response?.data
+      // Si el backend devuelve el detalle por campo, se muestra en lugar del mensaje genérico
+      setError(
+        data?.errors
+          ? Object.values(data.errors).join('. ')
+          : data?.message || 'Error al registrarse'
+      )
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="bg-white p-8 rounded-xl shadow-md w-full max-w-md">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">Crear cuenta</h1>
-        {error && (
-          <div className="bg-red-50 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm">
-            {error}
-          </div>
-        )}
+    <div className="grid min-h-[calc(100vh-3.5rem)] place-items-center px-4">
+      <div className="w-full max-w-sm">
+        <h1 className="mb-1 text-3xl font-semibold">Crear cuenta</h1>
+        <p className="mb-6 text-sm text-ink-soft">
+          Recomienda lo que merece la pena y gana reputación cuando otros lo valoran.
+        </p>
+
+        {error && <div className="alert-error mb-4">{error}</div>}
+
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Nombre de usuario
-            </label>
+          <label className="block">
+            <span className="mb-1 block text-sm font-medium">Nombre de usuario</span>
             <input
               type="text"
               name="username"
@@ -54,26 +56,24 @@ export default function RegisterPage() {
               required
               minLength={3}
               maxLength={30}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              autoComplete="username"
+              className="input"
             />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email
-            </label>
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-sm font-medium">Email</span>
             <input
               type="email"
               name="email"
               value={form.email}
               onChange={handleChange}
               required
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              autoComplete="email"
+              className="input"
             />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Contraseña
-            </label>
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-sm font-medium">Contraseña</span>
             <input
               type="password"
               name="password"
@@ -81,20 +81,19 @@ export default function RegisterPage() {
               onChange={handleChange}
               required
               minLength={8}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              autoComplete="new-password"
+              className="input"
             />
-          </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-indigo-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
-          >
-            {loading ? 'Creando cuenta...' : 'Crear cuenta'}
+            <span className="mt-1 block text-xs text-ink-faint">Mínimo 8 caracteres.</span>
+          </label>
+          <button type="submit" disabled={loading} className="btn btn-primary w-full !py-2">
+            {loading ? 'Creando cuenta…' : 'Crear cuenta'}
           </button>
         </form>
-        <p className="mt-4 text-sm text-gray-600 text-center">
+
+        <p className="mt-5 text-sm text-ink-soft">
           ¿Ya tienes cuenta?{' '}
-          <Link to="/login" className="text-indigo-600 hover:underline">
+          <Link to="/login" className="font-medium text-gem hover:underline">
             Inicia sesión
           </Link>
         </p>

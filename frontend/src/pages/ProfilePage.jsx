@@ -7,6 +7,7 @@ import { follow, unfollow, isFollowing, getFollowers, getFollowing } from '../ap
 import { useAuth } from '../context/AuthContext'
 import RecommendationCard from '../components/RecommendationCard'
 import UserListModal from '../components/UserListModal'
+import Avatar from '../components/Avatar'
 
 export default function ProfilePage() {
   const { id } = useParams()
@@ -20,7 +21,7 @@ export default function ProfilePage() {
   const [bio, setBio] = useState('')
   const [savingBio, setSavingBio] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
-  const [openList, setOpenList] = useState(null)
+  const [openList, setOpenList] = useState(null) // 'followers' | 'following' | null
 
   const { data: profile, isLoading: loadingProfile, refetch: refetchProfile } = useQuery({
     queryKey: ['profile', userId],
@@ -32,6 +33,7 @@ export default function ProfilePage() {
     queryFn: () => getRecommendationsByUser(userId).then(r => r.data),
   })
 
+  // ¿El usuario autenticado sigue a este perfil? (solo en perfiles ajenos)
   const { data: following, refetch: refetchFollowing } = useQuery({
     queryKey: ['following', userId],
     queryFn: () => isFollowing(userId).then(r => r.data),
@@ -43,6 +45,7 @@ export default function ProfilePage() {
     queryFn: () => getFollowers(userId).then(r => r.data),
   })
 
+  // La lista de seguidos solo se pide en el perfil propio
   const { data: followingList, isLoading: loadingFollowingList } = useQuery({
     queryKey: ['followingList', userId],
     queryFn: () => getFollowing(userId).then(r => r.data),
@@ -95,39 +98,36 @@ export default function ProfilePage() {
   }
 
   if (loadingProfile) {
+    return <p className="page py-16 text-center text-sm text-ink-faint">Cargando…</p>
+  }
+
+  if (!profile) {
     return (
-      <div className="text-center py-12 text-gray-400 text-sm">Cargando...</div>
+      <div className="page py-16 text-center">
+        <h1 className="mb-1 text-2xl font-semibold">Usuario no encontrado</h1>
+        <p className="text-sm text-ink-soft">Puede que el perfil ya no exista.</p>
+      </div>
     )
   }
 
+  const gems = recommendations?.filter(r => r.hiddenGem).length ?? 0
+
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
-
-      {/* Cabecera del perfil */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-6">
-        <div className="flex items-start gap-5">
-
-          {/* Avatar */}
-          <div className="relative flex-shrink-0">
-            {profile?.avatarUrl ? (
-              <img
-                src={profile.avatarUrl}
-                alt={profile.username}
-                className="w-20 h-20 rounded-full object-cover border-2 border-gray-100"
-              />
-            ) : (
-              <div className="w-20 h-20 rounded-full bg-indigo-100 flex items-center justify-center text-2xl font-bold text-indigo-600 border-2 border-gray-100">
-                {profile?.username.slice(0, 2).toUpperCase()}
-              </div>
-            )}
+    <div className="page">
+      {/* Cabecera */}
+      <section className="panel mb-8">
+        <div className="flex items-start gap-5 p-6">
+          <div className="relative shrink-0">
+            <Avatar src={profile.avatarUrl} name={profile.username} size="lg" />
             {isOwn && (
               <>
                 <button
                   onClick={() => fileRef.current?.click()}
                   disabled={uploadingAvatar}
-                  className="absolute -bottom-1 -right-1 w-7 h-7 bg-indigo-600 text-white rounded-full flex items-center justify-center text-xs hover:bg-indigo-700 disabled:opacity-50 shadow"
+                  title="Cambiar foto"
+                  className="absolute -bottom-1 -right-1 grid h-7 w-7 place-items-center rounded-full bg-ink text-xs text-white shadow hover:bg-black disabled:opacity-50"
                 >
-                  {uploadingAvatar ? '...' : '✎'}
+                  {uploadingAvatar ? '…' : '✎'}
                 </button>
                 <input
                   ref={fileRef}
@@ -140,42 +140,35 @@ export default function ProfilePage() {
             )}
           </div>
 
-          {/* Info */}
-          <div className="flex-1 min-w-0">
+          <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <h1 className="text-xl font-bold text-gray-900 [overflow-wrap:anywhere]">
-                  {profile?.username}
+                <h1 className="text-3xl font-semibold leading-tight [overflow-wrap:anywhere]">
+                  {profile.username}
                 </h1>
                 {isOwn && (
-                  <p className="text-xs text-gray-400 mt-0.5 [overflow-wrap:anywhere]">
-                    {profile?.email}
+                  <p className="mt-0.5 text-xs text-ink-faint [overflow-wrap:anywhere]">
+                    {profile.email}
                   </p>
                 )}
               </div>
               {!isOwn && user && (
                 <button
                   onClick={handleFollow}
-                  className={`text-sm px-4 py-1.5 rounded-lg font-medium transition-colors flex-shrink-0 ${
-                    following
-                      ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      : 'bg-indigo-600 text-white hover:bg-indigo-700'
-                  }`}
+                  className={`btn shrink-0 ${following ? 'btn-secondary' : 'btn-primary'}`}
                 >
                   {following ? 'Siguiendo' : 'Seguir'}
                 </button>
               )}
             </div>
 
-            {/* Critic Points */}
-            <div className="mt-3 inline-flex items-center gap-1.5 bg-indigo-50 px-3 py-1 rounded-full">
-              <span className="text-sm font-semibold text-indigo-700">
-                {profile?.criticPoints.toFixed(2)}
+            <p className="mt-3 flex items-baseline gap-2">
+              <span className="font-serif text-2xl font-semibold tabular-nums text-gem">
+                {profile.criticPoints.toFixed(2)}
               </span>
-              <span className="text-xs text-indigo-500">Critic Points</span>
-            </div>
+              <span className="label-caps">Critic Points</span>
+            </p>
 
-            {/* Bio */}
             <div className="mt-3">
               {editingBio ? (
                 <div className="space-y-2">
@@ -184,37 +177,38 @@ export default function ProfilePage() {
                     onChange={e => setBio(e.target.value)}
                     maxLength={500}
                     rows={3}
-                    placeholder="Escribe algo sobre ti..."
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none"
+                    placeholder="Escribe algo sobre ti…"
+                    className="input resize-none"
                   />
-                  <div className="flex gap-2">
+                  <div className="flex items-center gap-2">
                     <button
                       onClick={handleSaveBio}
                       disabled={savingBio}
-                      className="text-xs bg-indigo-600 text-white px-3 py-1.5 rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                      className="btn btn-primary !px-3 !py-1 text-xs"
                     >
-                      {savingBio ? 'Guardando...' : 'Guardar'}
+                      {savingBio ? 'Guardando…' : 'Guardar'}
                     </button>
                     <button
                       onClick={() => setEditingBio(false)}
-                      className="text-xs text-gray-500 hover:text-gray-700 px-3 py-1.5"
+                      className="text-xs text-ink-soft hover:text-ink"
                     >
                       Cancelar
                     </button>
+                    <span className="ml-auto text-xs text-ink-faint">{bio.length}/500</span>
                   </div>
                 </div>
               ) : (
-                <div className="flex items-start gap-2">
-                  <p className="text-sm text-gray-500 flex-1 whitespace-pre-line [overflow-wrap:anywhere]">
-                    {profile?.bio || (isOwn ? 'Añade una biografía...' : '')}
+                <div className="flex items-start gap-3">
+                  <p className="flex-1 whitespace-pre-line text-sm text-ink-soft [overflow-wrap:anywhere]">
+                    {profile.bio || (isOwn ? 'Añade una biografía…' : '')}
                   </p>
                   {isOwn && (
                     <button
                       onClick={() => {
-                        setBio(profile?.bio || '')
+                        setBio(profile.bio || '')
                         setEditingBio(true)
                       }}
-                      className="text-xs text-indigo-500 hover:text-indigo-700 flex-shrink-0"
+                      className="shrink-0 text-xs text-gem hover:underline"
                     >
                       Editar
                     </button>
@@ -225,71 +219,70 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Stats */}
+        {/* Estadísticas */}
         <div
-          className={`mt-5 pt-5 border-t border-gray-100 grid gap-4 text-center ${
+          className={`grid divide-x divide-line border-t border-line text-center ${
             isOwn ? 'grid-cols-4' : 'grid-cols-3'
           }`}
         >
-          <div>
-            <p className="text-lg font-bold text-gray-900">
+          <div className="py-3">
+            <p className="font-serif text-xl font-semibold tabular-nums">
               {recommendations?.length ?? 0}
             </p>
-            <p className="text-xs text-gray-400">Recomendaciones</p>
+            <p className="label-caps">Recomendaciones</p>
           </div>
-          <div>
-            <p className="text-lg font-bold text-gray-900">
-              {recommendations?.filter(r => r.hiddenGem).length ?? 0}
-            </p>
-            <p className="text-xs text-gray-400">Joyas ocultas</p>
+          <div className="py-3">
+            <p className="font-serif text-xl font-semibold tabular-nums">{gems}</p>
+            <p className="label-caps">Joyas ocultas</p>
           </div>
           <button
             onClick={() => setOpenList('followers')}
-            className="rounded-lg py-1 hover:bg-gray-50 transition-colors"
+            className="py-3 transition-colors hover:bg-paper"
           >
-            <p className="text-lg font-bold text-gray-900">
+            <p className="font-serif text-xl font-semibold tabular-nums">
               {followers?.length ?? 0}
             </p>
-            <p className="text-xs text-gray-400">Seguidores</p>
+            <p className="label-caps">Seguidores</p>
           </button>
           {isOwn && (
             <button
               onClick={() => setOpenList('following')}
-              className="rounded-lg py-1 hover:bg-gray-50 transition-colors"
+              className="py-3 transition-colors hover:bg-paper"
             >
-              <p className="text-lg font-bold text-gray-900">
+              <p className="font-serif text-xl font-semibold tabular-nums">
                 {followingList?.length ?? 0}
               </p>
-              <p className="text-xs text-gray-400">Siguiendo</p>
+              <p className="label-caps">Siguiendo</p>
             </button>
           )}
         </div>
-      </div>
+      </section>
 
       {/* Recomendaciones */}
-      <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-        Recomendaciones ({recommendations?.length ?? 0})
+      <h2 className="label-caps mb-3">
+        Recomendaciones · {recommendations?.length ?? 0}
       </h2>
 
       {loadingRecs && (
-        <div className="text-center py-8 text-gray-400 text-sm">Cargando...</div>
+        <p className="py-10 text-center text-sm text-ink-faint">Cargando…</p>
       )}
 
-      <div className="space-y-4">
-        {recommendations?.map(rec => (
-          <RecommendationCard key={rec.id} rec={rec} onRated={refetchRecs} />
-        ))}
-      </div>
-
-      {!loadingRecs && recommendations?.length === 0 && (
-        <div className="text-center py-12 text-gray-400 text-sm">
-          {isOwn
-            ? 'Aún no has publicado ninguna recomendación. ¡Busca contenido y comparte tu primera recomendación!'
-            : 'Este usuario aún no ha publicado recomendaciones.'}
+      {recommendations?.length > 0 && (
+        <div className="panel divide-y divide-line">
+          {recommendations.map(rec => (
+            <RecommendationCard key={rec.id} rec={rec} onRated={refetchRecs} />
+          ))}
         </div>
       )}
 
-      {/* Modales de seguidores / seguidos */}
+      {!loadingRecs && recommendations?.length === 0 && (
+        <p className="py-12 text-center text-sm text-ink-soft">
+          {isOwn
+            ? 'Aún no has publicado ninguna recomendación. Busca un título y comparte la primera.'
+            : 'Este usuario aún no ha publicado recomendaciones.'}
+        </p>
+      )}
+
       {openList === 'followers' && (
         <UserListModal
           title="Seguidores"

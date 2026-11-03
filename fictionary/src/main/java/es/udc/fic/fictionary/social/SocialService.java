@@ -1,5 +1,9 @@
 package es.udc.fic.fictionary.social;
 
+import es.udc.fic.fictionary.common.NotFoundException;
+import es.udc.fic.fictionary.common.ConflictException;
+import es.udc.fic.fictionary.common.BadRequestException;
+
 import es.udc.fic.fictionary.recommendation.Recommendation;
 import es.udc.fic.fictionary.recommendation.RecommendationRepository;
 import es.udc.fic.fictionary.recommendation.dto.RecommendationResponse;
@@ -37,24 +41,22 @@ public class SocialService {
 
     public void follow(Long followerId, Long followedId) {
         if (followerId.equals(followedId)) {
-            throw new IllegalArgumentException("No puedes seguirte a ti mismo");
+            throw new BadRequestException("No puedes seguirte a ti mismo");
         }
         if (followRepository.isFollowing(followerId, followedId)) {
-            throw new IllegalArgumentException("Ya sigues a este usuario");
+            throw new ConflictException("Ya sigues a este usuario");
         }
         User follower = userRepository.findById(followerId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Usuario no encontrado: " + followerId));
+                .orElseThrow(() -> new NotFoundException("Usuario no encontrado: " + followerId));
         User followed = userRepository.findById(followedId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Usuario no encontrado: " + followedId));
+                .orElseThrow(() -> new NotFoundException("Usuario no encontrado: " + followedId));
         followRepository.save(new Follow(follower, followed));
     }
 
     public void unfollow(Long followerId, Long followedId) {
         FollowId id = new FollowId(followerId, followedId);
         if (!followRepository.existsById(id)) {
-            throw new IllegalArgumentException("No sigues a este usuario");
+            throw new NotFoundException("No sigues a este usuario");
         }
         followRepository.deleteById(id);
     }

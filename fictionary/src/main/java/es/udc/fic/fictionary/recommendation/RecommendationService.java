@@ -1,5 +1,9 @@
 package es.udc.fic.fictionary.recommendation;
 
+import es.udc.fic.fictionary.common.NotFoundException;
+import es.udc.fic.fictionary.common.ConflictException;
+import es.udc.fic.fictionary.common.ForbiddenOperationException;
+
 import es.udc.fic.fictionary.catalog.CatalogService;
 import es.udc.fic.fictionary.catalog.MediaType;
 import es.udc.fic.fictionary.catalog.Title;
@@ -47,17 +51,14 @@ public class RecommendationService {
     public RecommendationResponse publish(Long curatorId, long tmdbId,
                                           MediaType mediaType, String text) {
         User curator = userRepository.findById(curatorId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Usuario no encontrado: " + curatorId));
+                .orElseThrow(() -> new NotFoundException("Usuario no encontrado: " + curatorId));
 
         catalogService.getOrFetchTitle(tmdbId, mediaType);
         Title title = titleRepository.findByTmdbIdAndMediaType(tmdbId, mediaType)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Título no encontrado: " + tmdbId));
+                .orElseThrow(() -> new NotFoundException("Título no encontrado: " + tmdbId));
 
         if (recommendationRepository.existsByCuratorIdAndTitleId(curatorId, title.getId())) {
-            throw new IllegalArgumentException(
-                    "Ya has publicado una recomendación para este título");
+            throw new ConflictException("Ya has publicado una recomendación para este título");
         }
 
         Recommendation recommendation = new Recommendation(curator, title, text);
@@ -67,12 +68,15 @@ public class RecommendationService {
 
     public RecommendationResponse rate(Long raterId, Long recommendationId, int score) {
         User rater = userRepository.findById(raterId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Usuario no encontrado: " + raterId));
+                .orElseThrow(() -> new NotFoundException("Usuario no encontrado: " + raterId));
 
         Recommendation recommendation = recommendationRepository.findById(recommendationId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Recomendación no encontrada: " + recommendationId));
+                .orElseThrow(() -> new NotFoundException("Recomendación no encontrada: " + recommendationId));
+
+        if (recommendation.getCurator().getId().equals(raterId)) {
+            throw new ForbiddenOperationException(
+                    "Un usuario no puede valorar sus propias recomendaciones");
+        }
 
         ratingRepository.findByRaterIdAndRecommendationId(raterId, recommendationId)
                 .ifPresentOrElse(
@@ -110,17 +114,14 @@ public class RecommendationService {
     public RecommendationResponse getById(Long id) {
         return recommendationRepository.findById(id)
                 .map(this::toResponse)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Recomendación no encontrada: " + id));
+                .orElseThrow(() -> new NotFoundException("Recomendación no encontrada: " + id));
     }
 
     public void delete(Long curatorId, Long recommendationId) {
         Recommendation recommendation = recommendationRepository.findById(recommendationId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Recomendación no encontrada: " + recommendationId));
+                .orElseThrow(() -> new NotFoundException("Recomendación no encontrada: " + recommendationId));
         if (!recommendation.getCurator().getId().equals(curatorId)) {
-            throw new IllegalArgumentException(
-                    "No tienes permiso para eliminar esta recomendación");
+            throw new ForbiddenOperationException("No tienes permiso para eliminar esta recomendación");
         }
         recommendationRepository.delete(recommendation);
         recalculateCriticPoints(recommendation.getCurator());

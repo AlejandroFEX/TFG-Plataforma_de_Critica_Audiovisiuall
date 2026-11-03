@@ -1,8 +1,11 @@
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../context/AuthContext'
 import { getProfile } from '../api/auth'
 import Avatar from './Avatar'
+
+const linkClass = ({ isActive }) =>
+  isActive ? 'font-medium text-ink' : 'text-ink-soft transition-colors hover:text-ink'
 
 export default function Navbar() {
   const { user, logoutUser } = useAuth()
@@ -18,49 +21,48 @@ export default function Navbar() {
 
   function handleLogout() {
     logoutUser()
-    queryClient.clear() // evita que la siguiente sesión vea datos en caché de la anterior
+    queryClient.clear() // la siguiente sesión no debe ver datos en caché de la anterior
     navigate('/login')
   }
 
   return (
-    <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
-      <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
-        <Link to="/feed" className="font-bold text-indigo-600 text-lg">
+    <header className="sticky top-0 z-40 border-b border-line bg-paper/90 backdrop-blur">
+      <div className="mx-auto flex h-14 max-w-3xl items-center justify-between px-4">
+        <Link
+          to="/feed"
+          className="flex items-center gap-2 font-serif text-xl font-semibold tracking-tight"
+        >
+          <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-gem" />
           Fictionary
         </Link>
-        <div className="flex items-center gap-4">
-          <Link to="/search" className="text-sm text-gray-600 hover:text-gray-900">
-            Buscar
-          </Link>
-          <Link to="/ranking" className="text-sm text-gray-600 hover:text-gray-900">
-            Ranking
-          </Link>
+
+        <nav className="flex items-center gap-5 text-sm">
+          {user && <NavLink to="/feed" className={linkClass}>Feed</NavLink>}
+          <NavLink to="/search" className={linkClass}>Buscar</NavLink>
+          <NavLink to="/ranking" className={linkClass}>Ranking</NavLink>
+
           {user ? (
             <>
               <Link
                 to={`/profile/${user.id}`}
-                className="flex items-center gap-2 text-sm text-gray-700 hover:text-gray-900"
+                title="Tu perfil"
+                className="flex items-center gap-2"
               >
                 <Avatar src={me?.avatarUrl} name={user.username} size="sm" />
-                <span className="hidden sm:inline">{user.username}</span>
+                <span className="hidden text-ink-soft sm:inline">{user.username}</span>
               </Link>
               <button
                 onClick={handleLogout}
-                className="text-sm text-gray-500 hover:text-gray-700"
+                className="text-ink-soft transition-colors hover:text-ink"
               >
                 Salir
               </button>
             </>
           ) : (
-            <Link
-              to="/login"
-              className="text-sm bg-indigo-600 text-white px-3 py-1.5 rounded-lg hover:bg-indigo-700"
-            >
-              Entrar
-            </Link>
+            <Link to="/login" className="btn btn-primary">Entrar</Link>
           )}
-        </div>
+        </nav>
       </div>
-    </nav>
+    </header>
   )
 }

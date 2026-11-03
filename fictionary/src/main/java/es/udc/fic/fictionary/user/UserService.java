@@ -1,5 +1,8 @@
 package es.udc.fic.fictionary.user;
 
+import es.udc.fic.fictionary.common.NotFoundException;
+import es.udc.fic.fictionary.common.ConflictException;
+
 import es.udc.fic.fictionary.security.JwtTokenProvider;
 import es.udc.fic.fictionary.user.dto.UserProfileResponse;
 import es.udc.fic.fictionary.user.dto.RankingEntryResponse;
@@ -32,10 +35,10 @@ public UserService(UserRepository userRepository,
 
     public User register(String username, String email, String rawPassword) {
         if (userRepository.existsByEmailIgnoreCase(email)) {
-            throw new IllegalArgumentException("El email ya está registrado: " + email);
+            throw new ConflictException("El email ya está registrado: " + email);
         }
         if (userRepository.existsByUsernameIgnoreCase(username)) {
-            throw new IllegalArgumentException("El username ya está en uso: " + username);
+            throw new ConflictException("El username ya está en uso: " + username);
         }
         User user = new User(username, email, passwordEncoder.encode(rawPassword));
         return userRepository.save(user);
@@ -53,15 +56,13 @@ public UserService(UserRepository userRepository,
     @Transactional(readOnly = true)
     public User getProfile(Long userId) {
         return userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Usuario no encontrado: " + userId));
+                .orElseThrow(() -> new NotFoundException("Usuario no encontrado: " + userId));
     }
 
     @Transactional(readOnly = true)
     public User getProfileByEmail(String email) {   
     return userRepository.findByEmailIgnoreCase(email)
-            .orElseThrow(() -> new IllegalArgumentException(
-                    "Usuario no encontrado: " + email));
+            .orElseThrow(() -> new NotFoundException("Usuario no encontrado: " + email));
 }
 
     public String getUserIdFromToken(String token) {
@@ -81,8 +82,7 @@ public List<RankingEntryResponse> getRanking(int page, int size) {
 
 public User uploadAvatar(Long userId, org.springframework.web.multipart.MultipartFile file) {
     User user = userRepository.findById(userId)
-            .orElseThrow(() -> new IllegalArgumentException(
-                    "Usuario no encontrado: " + userId));
+            .orElseThrow(() -> new NotFoundException("Usuario no encontrado: " + userId));
     if (user.getAvatarUrl() != null) {
         avatarStorageService.delete(user.getAvatarUrl());
     }
@@ -92,8 +92,7 @@ public User uploadAvatar(Long userId, org.springframework.web.multipart.Multipar
 }
 public User updateProfile(Long userId, String bio) {
     User user = userRepository.findById(userId)
-            .orElseThrow(() -> new IllegalArgumentException(
-                    "Usuario no encontrado: " + userId));
+            .orElseThrow(() -> new NotFoundException("Usuario no encontrado: " + userId));
     user.setBio(bio);
     return userRepository.save(user);
 }
